@@ -1,0 +1,82 @@
+= DESCRIPTION:
+
+Provides a Chef handler which can report run status, including any changes that were made, to a rabbit server. In the case of failed runs a backtrace will be included in the details reported. Based on the Graylog Gelf handler by Jon Wood (<jon@blankpad.net>) https://github.com/jellybob/chef-gelf
+
+= REQUIREMENTS:
+
+* A Rabbit server running somewhere.
+
+= USAGE:
+
+This example makes of the chef_handler cookbook, place some thing like this in cookbooks/chef_handler/recipes/rabbit.rb and add it to your run list. 
+
+  include_recipe "chef_handler::default"
+
+  gem_package "chef-rabbit" do
+    action :nothing
+  end.run_action(:install)
+  
+  # Make sure the newly installed Gem is loaded.
+  Gem.clear_paths
+  require 'chef/rabbit'
+  
+  chef_handler "Chef::RABBIT::Handler" do
+    source "chef/rabbit"
+    arguments({
+      :host => your_rabbit_server,
+      :user => rabbit_user,
+      :pass => rabbit_pass,
+      :queue => your_queue,
+      :exchange => your_exchange,
+      :timestamp_tag => "@timestamp"
+    })
+
+    supports :exception => true, :report => true
+  end.run_action(:enable)
+
+Arguments take the form of an options hash, with the following options:
+
+* bunny client attributes - http://rubybunny.info/articles/connecting.html
+* :queue                  - name of the rabbit queue to use. "chef-client" by default
+* :exchange               - name of exchange to use .default_exchange otherwise
+* :timestamp_tag          - tag for timestamp "timestamp" by default
+* :blacklist ({})         - A hash of cookbooks, resources and actions to ignore in the change list.
+
+= BLACKLISTING:
+
+Some resources report themselves as having updated on every run even if nothing changed, or are just things you don't care about. To reduce the amount of noise in your logs these can be ignored by providing a blacklist. In this example we don't want to be told about the GELF handler being activated:
+
+    chef_handler "Chef::RABBIT::Handler" do
+      source "chef/rabbit"
+      arguments({
+        :blacklist => {
+          "chef_handler" => {
+            "chef_handler" => [ "nothing", "enable" ]
+          }
+        }
+      })
+
+      supports :exception => true, :report => true
+    end.run_action(:enable)
+
+= LICENSE and AUTHOR:
+
+Copyright 2014 by MTN Sattelite Communications
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
