@@ -50,9 +50,10 @@ class Chef
 
       def report
         Chef::Log.debug "Reporting #{run_status.inspect}"
+        Chef::Log.debug "Options for RABBIT handler are: #{@options.pretty_inspect}"
 
         channel = @connection.create_channel
-        exchange = (@options[:exchange] == nil) ? channel.default_echange : channel.direct(@options[:exchange][:name], @options[:exchange][:params])
+        exchange = (@options[:exchange] == nil) ? channel.default_exchange : channel.direct(@options[:exchange][:name], @options[:exchange][:params])
         channel.queue(@options[:queue][:name], @options[:queue][:params]).bind(exchange)
 
         timestamp = (@options[:timestamp_tag] == nil) ? "timestamp" : @options[:timestamp_tag]
