@@ -11,6 +11,7 @@
 require "chef/rabbit/version"
 require 'bunny'
 require 'chef/log'
+require "chef/handler"
 
 class Chef
   module RABBIT
