@@ -53,7 +53,7 @@ class Chef
 
         channel = @connection.create_channel
         exchange = (@options[:exchange] == nil) ? channel.default_echange : channel.direct(@options[:exchange][:name], @options[:exchange][:params])
-        channel.queue(@options[:queue][:name], @options[:queue][:params]).bind(exch)
+        channel.queue(@options[:queue][:name], @options[:queue][:params]).bind(exchange)
 
         timestamp = (@options[:timestamp_tag] == nil) ? "timestamp" : @options[:timestamp_tag]
 
