@@ -112,6 +112,8 @@ class Chef
       end
 
       def sanitised_changes
+        return run_status.updated_resources if @options[:blacklist].nil?
+
         run_status.updated_resources.reject do |updated|
           cookbook = @options[:blacklist][updated.cookbook_name]
           if cookbook
