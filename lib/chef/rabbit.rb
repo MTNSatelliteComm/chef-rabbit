@@ -1,24 +1,11 @@
 #--
-
 # Copyright 2014 by MTN Sattelite Communications
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to
-# deal in the Software without restriction, including without limitation the
-# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-# sell copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-# IN THE SOFTWARE.
+# Licensed under the Apache License, Version 2.0 (the “License”); you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an 
+# “AS IS” BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+# See the License for the specific language governing permissions and limitations under the License.
 #++
 
 require "chef/rabbit/version"
@@ -33,23 +20,30 @@ class Chef
       
       def options=(value = {})
         @options = {
-          :host => "127.0.0.1",
-          :port => 5672,
-          :ssl => false,
-          :vhost => "/",
-          :user => "guest",
-          :pass => "guest",
-          :queue => "chef-rabbit",
-          :heartbeat => :server, # will use RabbitMQ setting
-          :frame_max => 131072
+          :connection => {
+            :host => "127.0.0.1",
+            :port => 5672,
+            :ssl => false,
+            :vhost => "/",
+            :user => "guest",
+            :pass => "guest",
+            :heartbeat => :server, # will use RabbitMQ setting
+            :frame_max => 131072
+          },
+          :queue => {
+            :name => "chef-rabbit",
+            :params => {
+              :durable => true
+            }
+          }
         }.merge(value)
       end
 
       def initialize(options = {})
-        self.options = options
+        self.options = symbolize_keys(options)
         
-        Chef::Log.debug "Initialised RABBIT handler for amqp://#{self.options[:server]}:#{self.options[:server]}@#{self.options[:server]}:#{self.options[:port]}/#{self.options[:vhost]}"
-        @connection = Bunny.new(self.options)
+        Chef::Log.debug "Initialised RABBIT handler for amqp://#{self.options[:connection][:user]}:#{self.options[:connection][:pass]}@#{self.options[:connection][:host]}:#{self.options[:connection][:port]}/#{self.options[:connection][:vhost]}"
+        @connection = Bunny.new(self.options[:connection])
         @connection.start
       end
 
@@ -57,7 +51,9 @@ class Chef
         Chef::Log.debug "Reporting #{run_status.inspect}"
 
         channel = @connection.create_channel
-        exchange = (@options[:exchange] == nil) ? channel.default_echange : channel.direct(@options[:exchange])
+        exchange = (@options[:exchange] == nil) ? channel.default_echange : channel.direct(@options[:exchange][:name], @options[:exchange][:params])
+        channel.queue(@options[:queue][:name], @options[:queue][:params]).bind(exch)
+
         timestamp = (@options[:timestamp_tag] == nil) ? "timestamp" : @options[:timestamp_tag]
 
         if run_status.failed?
@@ -68,7 +64,7 @@ class Chef
               :short_message => "Chef run failed on #{node.name}. Updated #{changes[:count]} resources.",
               :full_message => run_status.formatted_exception + "\n" + Array(backtrace).join("\n") + changes[:message]
             }.to_json, 
-            :routing_key => @options[:queue])
+            :routing_key => @options[:queue][:name])
         else
           Chef::Log.debug "Notifying Rabbit server of success."
           exchange.publish(
@@ -77,7 +73,7 @@ class Chef
               :short_message => "Chef run completed on #{node.name} in #{elapsed_time}. Updated #{changes[:count]} resources.",
               :full_message => changes[:message]
             }.to_json,
-            :routing_key => @options[:queue])
+            :routing_key => @options[:queue][:name])
         end
       end
       
@@ -97,6 +93,21 @@ class Chef
         end
 
         @changes = { :lines => lines, :count => count, :message => message }
+      end
+
+      def symbolize_keys(hash)
+        hash.inject({}) {|result, (key, value)|
+          new_key = case key
+                    when String then key.to_sym
+                    else key
+                    end
+          new_value = case value
+                      when Hash then symbolize_keys(value)
+                      else value
+                      end
+          result[new_key] = new_value
+          result
+        }
       end
 
       def sanitised_changes

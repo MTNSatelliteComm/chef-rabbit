@@ -23,11 +23,26 @@ This example makes of the chef_handler cookbook, place some thing like this in c
   chef_handler "Chef::RABBIT::Handler" do
     source "chef/rabbit"
     arguments({
-      :host => your_rabbit_server,
-      :user => rabbit_user,
-      :pass => rabbit_pass,
-      :queue => your_queue,
-      :exchange => your_exchange,
+      :connection => {
+        :host => "your_rabbit_server",
+        :user => "rabbit_user",
+        :pass => "rabbit_pass",
+        :vhost => "/stuff"
+      }
+      :queue => {
+        :name => "some_queue",
+        :params => {
+          :durable => true,
+          ...
+        }
+      },
+      :exchange => {
+        :name => "some_exchange",
+        :params => {
+          :durable => true,
+          ...
+        }
+      },
       :timestamp_tag => "@timestamp"
     })
 
@@ -36,9 +51,9 @@ This example makes of the chef_handler cookbook, place some thing like this in c
 
 Arguments take the form of an options hash, with the following options:
 
-* bunny client attributes - http://rubybunny.info/articles/connecting.html
-* :queue                  - name of the rabbit queue to use. "chef-client" by default
-* :exchange               - name of exchange to use .default_exchange otherwise
+* :connection             - http://rubybunny.info/articles/connecting.html
+* :queue                  - rabbit queue info to use. name is set to "chef-client" + durable = true by default
+* :exchange               - rabbit exchange to use .default_exchange + durable = true by default 
 * :timestamp_tag          - tag for timestamp "timestamp" by default
 * :blacklist ({})         - A hash of cookbooks, resources and actions to ignore in the change list.
 
@@ -63,20 +78,9 @@ Some resources report themselves as having updated on every run even if nothing 
 
 Copyright 2014 by MTN Sattelite Communications
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to
-deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Licensed under the Apache License, Version 2.0 (the “License”); you may not use this file except in compliance with the License. You may obtain a copy of the License at 
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+http://www.apache.org/licenses/LICENSE-2.0
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-IN THE SOFTWARE.
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an “AS IS” BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+See the License for the specific language governing permissions and limitations under the License.
