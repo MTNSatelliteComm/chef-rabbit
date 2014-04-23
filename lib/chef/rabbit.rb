@@ -57,7 +57,9 @@ class Chef
         Chef::Log.debug "Reporting #{run_status.inspect}"
 
         channel = @connection.create_channel
-        exchange = (@options[:exchange] == nil) ? channel.default_echange : channel.direct(@options[:exchange])
+        exchange = (@options[:exchange] == nil) ? channel.default_echange : channel.direct(@options[:exchange], { :durable => true })
+        channel.queue(@options[:queue], { :durable => true } ).bind(exch)
+
         timestamp = (@options[:timestamp_tag] == nil) ? "timestamp" : @options[:timestamp_tag]
 
         if run_status.failed?
