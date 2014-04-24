@@ -59,7 +59,7 @@ class Chef
 
         if run_status.failed?
           message = { 
-            timestamp.to_sym => Time.now.getutc.to_s,
+            timestamp.to_sym => Time.now.getutc.iso8601.to_s,
             :short_message => "Chef run failed on #{node.name}. Updated #{changes[:count]} resources.",
             :full_message => run_status.formatted_exception + "\n" + Array(backtrace).join("\n") + changes[:message]
           }
@@ -67,7 +67,7 @@ class Chef
           exchange.publish(message.to_json, :routing_key => @options[:queue][:name])
         else
           message = {
-            timestamp.to_sym => Time.now.getutc.to_s,
+            timestamp.to_sym => Time.now.getutc.iso8601.to_s,
             :short_message => "Chef run completed on #{node.name} in #{elapsed_time}. Updated #{changes[:count]} resources.",
             :full_message => changes[:message]
           }
