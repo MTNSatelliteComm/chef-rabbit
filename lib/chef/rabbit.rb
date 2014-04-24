@@ -51,7 +51,7 @@ class Chef
 
         Chef::Log.debug "Initialised RABBIT handler for amqp://#{self.options[:connection][:user]}:#{self.options[:connection][:pass]}@#{self.options[:connection][:host]}:#{self.options[:connection][:port]}#{self.options[:connection][:vhost]}"
 
-        channel = @connection.create_channel
+        channel = connection.create_channel
         exchange = (@options[:exchange] == nil) ? channel.default_exchange : channel.direct(@options[:exchange][:name], @options[:exchange][:params])
         channel.queue(@options[:queue][:name], @options[:queue][:params]).bind(exchange)
 
