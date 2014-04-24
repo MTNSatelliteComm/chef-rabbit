@@ -16,7 +16,6 @@ require "chef/handler"
 class Chef
   module RABBIT
     class Handler < Chef::Handler
-      attr_reader :connection
       attr_reader :options
       
       def options=(value = {})
@@ -42,15 +41,15 @@ class Chef
 
       def initialize(options = {})
         self.options = symbolize_keys(options)
-        
-        Chef::Log.debug "Initialised RABBIT handler for amqp://#{self.options[:connection][:user]}:#{self.options[:connection][:pass]}@#{self.options[:connection][:host]}:#{self.options[:connection][:port]}/#{self.options[:connection][:vhost]}"
-        @connection = Bunny.new(self.options[:connection])
-        @connection.start
       end
 
       def report
         Chef::Log.debug "Reporting #{run_status.inspect}"
         Chef::Log.debug "Options for RABBIT handler are: #{@options.pretty_inspect}"
+        connection = Bunny.new(self.options[:connection])
+        connection.start
+
+        Chef::Log.debug "Initialised RABBIT handler for amqp://#{self.options[:connection][:user]}:#{self.options[:connection][:pass]}@#{self.options[:connection][:host]}:#{self.options[:connection][:port]}#{self.options[:connection][:vhost]}"
 
         channel = @connection.create_channel
         exchange = (@options[:exchange] == nil) ? channel.default_exchange : channel.direct(@options[:exchange][:name], @options[:exchange][:params])
@@ -77,6 +76,8 @@ class Chef
             }.to_json,
             :routing_key => @options[:queue][:name])
         end
+
+        connection.close
       end
       
       def changes
@@ -100,7 +101,8 @@ class Chef
       def symbolize_keys(hash)
         hash.inject({}) {|result, (key, value)|
           new_key = case key
-                    when String then key.to_sym
+                    when String then
+                     key.to_sym
                     else key
                     end
           new_value = case value
