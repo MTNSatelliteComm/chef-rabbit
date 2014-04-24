@@ -51,30 +51,28 @@ class Chef
 
         Chef::Log.debug "Initialised RABBIT handler for amqp://#{self.options[:connection][:user]}:#{self.options[:connection][:pass]}@#{self.options[:connection][:host]}:#{self.options[:connection][:port]}#{self.options[:connection][:vhost]}"
 
-        channel = @connection.create_channel
+        channel = connection.create_channel
         exchange = (@options[:exchange] == nil) ? channel.default_exchange : channel.direct(@options[:exchange][:name], @options[:exchange][:params])
         channel.queue(@options[:queue][:name], @options[:queue][:params]).bind(exchange)
 
         timestamp = (@options[:timestamp_tag] == nil) ? "timestamp" : @options[:timestamp_tag]
 
         if run_status.failed?
-          Chef::Log.debug "Notifying Rabbit server of failure."
-          exchange.publish( 
-            { 
-              timestamp.to_sym => Time.now.getutc.to_s,
-              :short_message => "Chef run failed on #{node.name}. Updated #{changes[:count]} resources.",
-              :full_message => run_status.formatted_exception + "\n" + Array(backtrace).join("\n") + changes[:message]
-            }.to_json, 
-            :routing_key => @options[:queue][:name])
+          message = { 
+            timestamp.to_sym => Time.now.getutc.to_s,
+            :short_message => "Chef run failed on #{node.name}. Updated #{changes[:count]} resources.",
+            :full_message => run_status.formatted_exception + "\n" + Array(backtrace).join("\n") + changes[:message]
+          }
+          Chef::Log.debug "Notifying Rabbit server of failure: #{message.pretty_inspect}"
+          exchange.publish(message.to_json, :routing_key => @options[:queue][:name])
         else
-          Chef::Log.debug "Notifying Rabbit server of success."
-          exchange.publish(
-            {
-              timestamp.to_sym => Time.now.getutc.to_s,
-              :short_message => "Chef run completed on #{node.name} in #{elapsed_time}. Updated #{changes[:count]} resources.",
-              :full_message => changes[:message]
-            }.to_json,
-            :routing_key => @options[:queue][:name])
+          message = {
+            timestamp.to_sym => Time.now.getutc.to_s,
+            :short_message => "Chef run completed on #{node.name} in #{elapsed_time}. Updated #{changes[:count]} resources.",
+            :full_message => changes[:message]
+          }
+          Chef::Log.debug "Notifying Rabbit server of success: #{message.pretty_inspect}"
+          exchange.publish(message.to_json, :routing_key => @options[:queue][:name])
         end
 
         connection.close
