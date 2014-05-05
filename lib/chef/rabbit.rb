@@ -81,11 +81,16 @@ class Chef
       def changes
         @changes unless @changes.nil?
         
-        lines = sanitised_changes.collect do |resource|
-          "recipe[#{resource.cookbook_name}::#{resource.recipe_name}] ran '#{resource.action}' on #{resource.resource_name} '#{resource.name}'"
+        processed_changes = sanitised_changes
+        lines = nil
+
+        if processed_changes != nil
+          lines = processed_changes.collect do |resource|
+            "recipe[#{resource.cookbook_name}::#{resource.recipe_name}] ran '#{resource.action}' on #{resource.resource_name} '#{resource.name}'"
+          end
         end
 
-        count = lines.size
+        count = (lines == nil) ? 0 : lines.size
 
         message = if count > 0
           "Updated #{count} resources:\n\n#{lines.join("\n")}"
