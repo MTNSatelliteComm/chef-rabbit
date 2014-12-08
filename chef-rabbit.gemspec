@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.name        = "chef-rabbit"
   s.version     = Chef::RABBIT::VERSION
   s.authors     = ["MTN Satellite Communications"]
-  s.email       = ["marat.garafutdinov@mtnsart.com"]
+  s.email       = ["marat.garafutdinov@mtnsat.com"]
   s.homepage    = "https://github.com/MTNSatelliteComm/chef-rabbit"
   s.summary     = %q{Provides a Chef handler which reports run failures and changes to a Rabbit server.}
   s.description = File.read("README.rdoc")
