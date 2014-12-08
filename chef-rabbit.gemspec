@@ -19,5 +19,5 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   s.add_dependency "bunny"
-  s.add_dependency "chef"
+  s.add_dependency "chef", "~> 11.0"
 end
