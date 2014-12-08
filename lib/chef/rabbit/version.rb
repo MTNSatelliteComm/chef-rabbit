@@ -1,6 +1,6 @@
 #--
 
-# Copyright 2014 by MTN Sattelite Communications
+# Copyright 2014 by MTN Satellite Communications
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -23,6 +23,6 @@
 
 class Chef
   module RABBIT
-    VERSION = "1.0.10"
+    VERSION = "1.0.11"
   end
 end
