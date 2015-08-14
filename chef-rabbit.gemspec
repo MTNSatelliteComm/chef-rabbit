@@ -18,6 +18,6 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
 
-  s.add_dependency "bunny"
+  s.add_dependency "bunny", "~> 1.6.3"
   s.add_dependency "chef", "~> 11.0"
 end
